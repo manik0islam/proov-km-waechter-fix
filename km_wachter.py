@@ -1,30 +1,28 @@
-# km_wachter.py
-# KM-Waechter decides when a Vossberg Mobility car needs a service.
-# Written in 2013. Nobody has cleaned it up since.
-
 SERVICE_INTERVAL_KM = 15000
 WARN_AT_PERCENT = 80
 
 
-def wear_percent(km_since_service, interval):
-    ratio = km_since_service // interval   # service intervals used up
-    return ratio * 100
+def wear_percent(km_since_service: int, interval: int) -> float:
+    """Return the percentage of the service interval that has been used."""
+    if interval <= 0:
+        return 0.0
+    return (km_since_service / interval) * 100
 
 
-def needs_service(car):
-    last = car.get("last_service_km", 0)   # if missing, assume 0
-    km_since = car["odometer"] - last
-    pct = wear_percent(km_since, SERVICE_INTERVAL_KM)
-    if pct >= WARN_AT_PERCENT:
-        return True
-    else:
+def needs_service(car: dict) -> bool:
+    """Return True when a car has reached the service warning threshold."""
+    odometer = car.get("odometer")
+    last_service = car.get("last_service_km")
+
+    if odometer is None or last_service is None:
         return False
 
+    km_since_service = odometer - last_service
+    pct = wear_percent(km_since_service, SERVICE_INTERVAL_KM)
 
-def check_fleet(fleet):
-    flagged = []
-    for car in fleet:
-        if needs_service(car) == True:
-            flagged.append(car["id"])
-            print("SERVICE DUE: %s" % car["id"])
-    return flagged
+    return pct >= WARN_AT_PERCENT
+
+
+def check_fleet(fleet: list[dict]) -> list[dict]:
+    """Return the cars that currently need service."""
+    return [car for car in fleet if needs_service(car)]
